@@ -1,0 +1,120 @@
+<html>
+ <head>
+  <script type="application/javascript">
+
+    const CanvasWidth = 800, CanvasHeight = 600;
+
+    // canvas space (left, top) as origin
+    const Top = 0, Left = 0, Bottom = CanvasHeight, Right = CanvasWidth;
+    const CenterX = CanvasWidth / 2, CenterY = CanvasHeight / 2;
+
+    // Box object in the 3D world coord
+    const BoxWidth = 50, BoxHeight = 70;
+    var box1 = [30 /* x */, 30 /* y */, 10 /* z */, BoxWidth, BoxHeight];
+    var box2 = [-30 /* x */, 30 /* y */, 10 /* z */, BoxWidth, BoxHeight];
+    var cameraPosition = [0 /* x */, 0 /* y */, 0 /* z */];
+
+    // Focal length of the camera in 3D world space
+    const FocalLength = 10;
+    
+    var ctx;
+
+    function init() {
+
+      // keyboard control
+      window.addEventListener("keydown", event => {
+          switch (event.key) {
+            case 'ArrowUp':
+              moveCamera(0, 0, 5);
+            break;
+            case 'ArrowDown':
+              moveCamera(0, 0, -5);
+            break;
+            case 'ArrowLeft':
+              moveCamera(-5, 0, 0);
+            break;
+            case 'ArrowRight':
+              moveCamera(5, 0, 0);
+            break;
+            case 'f':
+            case 'F':
+              moveCamera(0, 1.5, 0);
+            break;
+            case 'v':
+            case 'V':
+              moveCamera(0, -1.5, 0);
+            break;
+          }
+      }, true);
+
+      ctx = document.getElementById("canvas").getContext("2d");
+      draw();
+    }
+
+    function moveCamera(dx, dy, dz) {
+
+      cameraPosition[0] += dx;
+      cameraPosition[1] += dy;
+      cameraPosition[2] += dz;
+      draw();
+    }
+
+
+    function drawBox(box) {
+
+      let [bx, by, bz, boxWidth, boxHeight] = box;
+      let [cx, cy, cz] = cameraPosition;
+
+      if ((by - cy) > 0) {
+
+        let scale = FocalLength/ (by - cy);
+        ctx.save();
+        // canvas to camera space
+        ctx.transform(scale, 0, 0, -scale, CenterX, CenterY);
+
+        // camera projection
+        //ctx.transform(scale, 0, 0, scale, 0, 0);
+
+        ctx.fillStyle = "rgb(200, 0, 0)";
+        ctx.fillRect (bx - cx - boxWidth / 2, bz - cz + boxHeight / 2, boxWidth, boxHeight);
+        ctx.restore();
+      }        
+    }
+
+    function draw() {
+
+      // clear canvas
+      ctx.clearRect(Left, Top, CanvasWidth, CanvasHeight);
+
+      drawBox(box1);
+      drawBox(box2);
+
+      // reset transform back to canvas space
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+      // draw the center cross lines as overlay
+      ctx.strokeStyle = "rgb(100, 100, 0)";
+      ctx.moveTo(CenterX, Top);
+      ctx.lineTo(CenterX, Bottom);
+      ctx.moveTo(Left, CenterY);
+      ctx.lineTo(Right, CenterY);
+      ctx.stroke();
+    }
+
+  </script>
+ </head>
+ <body onload="init();">
+   <center>
+   <b1>2.5D Simple Example</b1>
+   <br>
+   <canvas id="canvas" width="800" height="600"></canvas>
+   <br>   
+   <a href="javascript:moveCamera(0, 1.5, 0);">Forward (F)</a>
+   <a href="javascript:moveCamera(0, -1.5, 0);">Backward (V)</a>
+   <a href="javascript:moveCamera(-5, 0, 0);">Left</a>
+   <a href="javascript:moveCamera(5, 0, 0);">Right</a>
+   <a href="javascript:moveCamera(0, 0, 5);">Up</a>
+   <a href="javascript:moveCamera(0, 0, -5);">Down</a>
+   </center>
+ </body>
+</html>
