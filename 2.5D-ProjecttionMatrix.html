@@ -12,6 +12,9 @@
     const BoxWidth = 50, BoxHeight = 70;
     var box1 = [30 /* x */, 30 /* y */, 10 /* z */, BoxWidth, BoxHeight];
     var box2 = [-30 /* x */, 30 /* y */, 10 /* z */, BoxWidth, BoxHeight];
+    
+    var world = [box1, box2];
+
     var cameraPosition = [0 /* x */, 0 /* y */, 0 /* z */];
 
     // Focal length of the camera in 3D world space
@@ -68,12 +71,13 @@
       if ((by - cy) > 0) {
 
         let scale = FocalLength/ (by - cy);
+        
         ctx.save();
         // canvas to camera space
-        ctx.transform(scale, 0, 0, -scale, CenterX, CenterY);
+        ctx.transform(1, 0, 0, -1, CenterX, CenterY);
 
         // camera projection
-        //ctx.transform(scale, 0, 0, scale, 0, 0);
+        ctx.transform(scale, 0, 0, scale, 0, 0);
 
         ctx.fillStyle = "rgb(200, 0, 0)";
         ctx.fillRect (bx - cx - boxWidth / 2, bz - cz + boxHeight / 2, boxWidth, boxHeight);
@@ -86,11 +90,8 @@
       // clear canvas
       ctx.clearRect(Left, Top, CanvasWidth, CanvasHeight);
 
-      drawBox(box1);
-      drawBox(box2);
-
-      // reset transform back to canvas space
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      // draw objects in the world
+      world.forEach(obj =>  drawBox(obj));
 
       // draw the center cross lines as overlay
       ctx.strokeStyle = "rgb(100, 100, 0)";
@@ -109,8 +110,8 @@
    <br>
    <canvas id="canvas" width="800" height="600"></canvas>
    <br>   
-   <a href="javascript:moveCamera(0, 1.5, 0);">Forward (F)</a>
-   <a href="javascript:moveCamera(0, -1.5, 0);">Backward (V)</a>
+   <a href="javascript:moveCamera(0, 1.5, 0);">Forward (f)</a>
+   <a href="javascript:moveCamera(0, -1.5, 0);">Backward (v)</a>
    <a href="javascript:moveCamera(-5, 0, 0);">Left</a>
    <a href="javascript:moveCamera(5, 0, 0);">Right</a>
    <a href="javascript:moveCamera(0, 0, 5);">Up</a>
