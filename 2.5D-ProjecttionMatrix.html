@@ -1,10 +1,6 @@
 <html>
 <head>
-  <script type="application/javascript">
-
-    function getRndInteger(min, max) {
-      return Math.floor(Math.random() * (max - min) ) + min;
-    }
+  <script type="application/javascript">    
 
     var img = new Image();
     img.src = "4-tree-png-image-download-picture.png";
@@ -19,37 +15,43 @@
 
     const Game = {};
     const world = [];
-    
-    // Boxes Generation
-    for (let i = 0; i < NumBoxes; i++) {
-        world.push([-150 + getRndInteger( 0, 300), /* x */                   
-        0, /* y */
-        getRndInteger( 30, 250), /* z */
-        BoxWidth + getRndInteger( 0, 20),
-        BoxHeight + getRndInteger( 0, 20)]);
-    }
 
     var cameraPosition = [0 /* x */, 60 /* y */, 0 /* z */];
 
     // Focal length of the camera in 3D world space
     const FocalLength = 10;
     
-    var tickLength = 50;
+    var tickLength = 40; /* ms */
     var ctx;
+    
+    const getRndInteger = (min, max) => Math.floor(Math.random() * (max - min) ) + min;
+
+    const genBox = (cz) => [-150 + getRndInteger( 0, 300), /* x */                   
+                            0, /* y */
+                            cz + getRndInteger( 30, 250), /* z */
+                            BoxWidth + getRndInteger( 0, 20),
+                            BoxHeight + getRndInteger( 0, 20)];
+
+    function moveCamera(dx, dy, dz) {
+
+      cameraPosition[0] += dx;
+      cameraPosition[1] += dy;
+      cameraPosition[2] += dz;
+    }
 
     function GameLoop() {
 
         Game.stopMain = window.requestAnimationFrame( GameLoop );
-
-        // statistics
-        currTick = performance.now();
+        
+        let currTick = performance.now();
 
         // skip rendering to slow down the frame update
         if (Game.lastTick + tickLength > currTick) return;
 
         moveCamera(0, 0, 1.5);
-        draw();        
+        render();        
 
+        // statistics
         let fps = 1000 / (currTick - Game.lastTick);
         Game.lastTick = currTick;
         ctx.fillText('FPS: ' + fps.toFixed(2), -400, -280);        
@@ -75,21 +77,17 @@
         }
       }, true);
 
-
       ctx = document.getElementById("canvas").getContext("2d");
 
       // canvas to camera space
       ctx.translate(HalfCanvasWidth, HalfCanvasHeight);
 
+      // 
+      for (let i = 0; i < NumBoxes; i++)
+        world.push(genBox(0));
+
       Game.lastTick = performance.now();
       GameLoop(); // Start the cycle
-    }
-
-    function moveCamera(dx, dy, dz) {
-
-      cameraPosition[0] += dx;
-      cameraPosition[1] += dy;
-      cameraPosition[2] += dz;
     }
 
     function drawBox(box) {
@@ -115,16 +113,11 @@
 
       } else {
 
-        world.splice(world.indexOf(box), 1);
-        world.push([-150 + getRndInteger( 0, 300), /* x */                   
-         0, /* y */
-         cz + getRndInteger( 30, 250), /* z */
-         BoxWidth + getRndInteger( 0, 20),
-         BoxHeight + getRndInteger( 0, 20)]);
+        world.splice(world.indexOf(box), 1, genBox(cz));
       }
     }
 
-    function draw() {
+    function render() {
 
       // clear canvas
       ctx.clearRect(-HalfCanvasWidth, -HalfCanvasHeight, CanvasWidth, CanvasHeight);
