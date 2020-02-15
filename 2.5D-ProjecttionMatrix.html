@@ -1,6 +1,6 @@
 <html>
 <head>
-  <script type="application/javascript">    
+  <script type="application/javascript">
 
     const getRndInteger = (min, max) => Math.floor(Math.random() * (max - min) ) + min;
 
@@ -20,115 +20,118 @@
 
     const Camera = {
       FocalLength : 10, /* Focal length of the camera in 3D World space */
-      position : {x : 0, y : 60, z : 0 },
-      moveForward : function() { this.position.z += 1.5 },
-      moveUp : function() { this.position.y -= 5 },
-      moveDown : function() { this.position.y += 5 },
-      moveLeft : function() { this.position.x -= 10 },
-      moveRight : function() { this.position.x += 10 }
+      position : { x : 0, y : 60, z : 0 }, /* (x,y,z) is the position in world */
+      moveForward : function() { this.position.z += 1.5; },
+      moveUp : function() { this.position.y -= 5; },
+      moveDown : function() { this.position.y += 5; },
+      moveLeft : function() { this.position.x -= 10; },
+      moveRight : function() { this.position.x += 10; }
     }; 
     
     const Game = {
-      tickLength : 1000, /* ms */
+      tickLength : 30, /* ms */
       lastTick : 0,
+      fps : 0,
       gameLoop : -1,
       numBoxes : 15,
-      genBox : () => ({ x : getRndInteger(-150, 150),
+      genBox : () => ({ /* (x,y,z) is the position in world */
+        x : getRndInteger(-150, 150),
         y : 0,
         z :  Camera.position.z + getRndInteger(30, 250),
         width : BoxWidth + getRndInteger(0, 20),
-        height : BoxHeight + getRndInteger(0, 20) })
+        height : BoxHeight + getRndInteger(0, 20) 
+      })
     };
 
     function GameLoop(tick) {
 
       Game.gameLoop = window.requestAnimationFrame( GameLoop );
 
-        // skip rendering to slow down the frame update
-        if (Game.lastTick + Game.tickLength > tick) return;
+      // skip rendering to slow down the frame update
+      if (Game.lastTick + Game.tickLength > tick) return;
+      // statistics
+      Game.fps = 1000 / (tick - Game.lastTick);
+      Game.lastTick = tick;
 
-        Camera.moveForward();
-        render();        
+      Camera.moveForward();
 
-        // statistics
-        let fps = 1000 / (tick - Game.lastTick);
-        Game.lastTick = tick;
-        graphicContext.fillText('FPS: ' + fps.toFixed(2), -400, -280);        
+      World.forEach(box => {
+        let distance = box.z - Camera.position.z;
+
+        if (distance < 0) {
+          World.splice(World.indexOf(box), 1, Game.genBox());
+          return;
+        }
+      });
+      World.sort((a, b) => b.z - a.z);  // ordered by z depth, far one get drawn first.
+
+      renderFrame();      
     }
 
     function init() {
 
-        // keyboard control
-        window.addEventListener("keydown", ({key} /* event.key*/ ) => {
-          switch (key) {
-            case 'ArrowUp':
-            Camera.moveUp();
-            break;
-            case 'ArrowDown':
-            Camera.moveDown();
-            break;
-            case 'ArrowLeft':
-            Camera.moveLeft();
-            break;
-            case 'ArrowRight':
-            Camera.moveRight();
-            break;
-          }
-        }, true);
+      // keyboard control
+      window.addEventListener("keydown", ({key} /* event.key*/ ) => {
+        switch (key) {
+          case 'ArrowUp':
+          Camera.moveUp();
+          break;
+          case 'ArrowDown':
+          Camera.moveDown();
+          break;
+          case 'ArrowLeft':
+          Camera.moveLeft();
+          break;
+          case 'ArrowRight':
+          Camera.moveRight();
+          break;
+        }
+      }, true);
 
-        graphicContext = document.getElementById("canvas").getContext("2d");
+      graphicContext = document.getElementById("canvas").getContext("2d");
+
+      // generate boxes
+      for (let i = 0; i < Game.numBoxes; i++)
+        World.push(Game.genBox());
+
+      GameLoop(performance.now()); // Start the cycle
+    }
+
+    function renderFrame() {
+
+      // clear canvas
+      graphicContext.clearRect(0, 0, CanvasWidth, CanvasHeight);      
+
+      // draw objects in the World
+      World.forEach(box => {
+        let distance = box.z - Camera.position.z;
+        let scale = Camera.FocalLength / distance;
+
+        graphicContext.save();
 
         // canvas to camera space
         graphicContext.translate(HalfCanvasWidth, HalfCanvasHeight);
+        // World to camera space
+        graphicContext.scale(scale, scale);
 
-        // generate boxes
-        for (let i = 0; i < Game.numBoxes; i++)
-          World.push(Game.genBox());
+        graphicContext.drawImage(img, box.x - Camera.position.x - box.width / 2, box.y - Camera.position.y - box.height / 2, box.width, box.height);
+  // draw the bounding box for debug
+  // graphicContext.strokeStyle = "rgb(200, 0, 0)";
+  // graphicContext.strokeRect(box.x - Camera.position.x - box.width / 2, box.y - Camera.position.y - box.height / 2, box.width, box.height);
 
-        Game.lastTick = performance.now();
-        GameLoop(Game.lastTick); // Start the cycle
-    }
-
-    function drawBox(box) {
-
-      let distance = box.z - Camera.position.z;
-
-      if (distance < 0) {
-        World.splice(World.indexOf(box), 1, Game.genBox());
-        return;
-      }
-
-      let scale = Camera.FocalLength/ distance;
-
-      graphicContext.save();
-
-      // World to camera space
-      graphicContext.scale(scale, scale);
-
-      graphicContext.drawImage(img, box.x - Camera.position.x - box.width / 2, box.y - Camera.position.y - box.height / 2, box.width, box.height);
-// draw the bounding box
-//        graphicContext.strokeStyle = "rgb(200, 0, 0)";
-//        graphicContext.strokeRect(box.x - Camera.position.x - box.width / 2, box.y - Camera.position.y - box.height / 2, box.width, box.height);
-
-      graphicContext.restore();
-    }
-
-    function render() {
-
-      // clear canvas
-      graphicContext.clearRect(-HalfCanvasWidth, -HalfCanvasHeight, CanvasWidth, CanvasHeight);
-
-      // draw objects in the World
-      World.sort((a, b) => b.z - a.z);
-      World.forEach(obj => drawBox(obj));
+        graphicContext.restore();
+      });
 
       // draw the center cross lines on overlay
-      graphicContext.strokeStyle = "rgb(100, 100, 0)";
+      graphicContext.moveTo(HalfCanvasWidth, 0);
+      graphicContext.lineTo(HalfCanvasWidth, CanvasHeight);
       graphicContext.moveTo(0, HalfCanvasHeight);
-      graphicContext.lineTo(0, -HalfCanvasHeight);
-      graphicContext.moveTo(-HalfCanvasWidth, 0);
-      graphicContext.lineTo(HalfCanvasWidth, 0);
+      graphicContext.lineTo(CanvasWidth, HalfCanvasHeight);
       graphicContext.stroke();
+
+      // fps
+      graphicContext.fillText('FPS: ' + Game.fps.toFixed(2), 0, 10);
+
     }
 
     </script>
