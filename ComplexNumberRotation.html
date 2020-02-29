@@ -1,0 +1,191 @@
+<html>
+<head>
+  <link href="https://fonts.googleapis.com/css?family=Trade+Winds&display=swap" rel="stylesheet">
+  <style type="text/css">
+    body {
+      font-family: 'Trade Winds';
+    }
+  </style>
+  <script type="application/javascript">
+    var graphicContext;
+
+    // Canvas Setup
+    var CanvasWidth, CanvasHeight;
+    var HalfCanvasWidth, HalfCanvasHeight;
+
+    // Box object in the 3D World coord
+    const BoxWidth = 100, BoxHeight = 170;
+
+    const World = []; /* Simplest Scene Graph */
+
+    const cube = {
+      x : 0,
+      y : 50,
+      z : 250,
+      mesh : [  // relative to cube's position
+        [-75, -75, 75],
+        [-75, -75, -75],
+        [75, -75, -75],
+        [75, -75, 75],
+
+        [-75, 75, 75],
+        [-75, 75, -75],
+        [75, 75, -75],
+        [75, 75, 75],
+      ],
+      rotate: function() {
+        let rotation = this.rotationVec;
+        for (let i = 0; i < 8; i++ ) {
+
+          let vertex = this.mesh[i];
+
+          // complex number rotation, simple and eazy
+          let vz = vertex[2] * rotation.x + vertex[0] * rotation.z;
+          let vx = vertex[0] * rotation.x - vertex[2] * rotation.z;
+
+          this.mesh[i][0] = vx;
+          this.mesh[i][2] = vz;
+        }
+        // sort by z depth
+        this.mesh.sort((v1, v2) => v2[2] - v1[2]);
+      },
+
+      render: function(ctx, camera) {
+        
+        //* draw the cube mesh
+        this.mesh.forEach(vertex => {
+
+          let vx = vertex[0];
+          let vz = vertex[2];
+
+          let distance = this.z + vz - camera.position.z;
+          let scale = camera.FocalLength / distance;
+
+          ctx.save();
+          ctx.scale(scale, scale);
+
+          let x= this.x + vx - camera.position.x;
+          let y= this.y + vertex[1] - camera.position.y;
+
+          // draw the vertex circle
+          ctx.beginPath();
+          ctx.arc(x, y, 10, 0, 2 * Math.PI);
+          ctx.closePath();
+          ctx.strokeStyle = "rgb(0,0,0)";
+          ctx.fillStyle = "rgb(200, 0, 0)";
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+
+        });
+      },
+      rotationVec: {x: 0, z: 0} // x + zi
+    };
+
+    const Camera = {
+      FocalLength : 500, /* Focal length of the camera in 3D World space */
+      position : { x : 0, y : 60, z : 0 }, /* (x,y,z) is the position in world */
+      moveForward : function() { this.position.z += 1.5; },
+      moveUp : function() { this.position.y -= 5; },
+      moveDown : function() { this.position.y += 5; },
+      moveLeft : function() { this.position.x -= 10; },
+      moveRight : function() { this.position.x += 10; }
+    }; 
+    
+    const Game = {
+      tickLength : 30, /* ms */
+      lastTick : 0,
+      fps : 0,
+      gameLoop : -1
+    };
+
+    function GameLoop(tick) {
+
+      Game.gameLoop = window.requestAnimationFrame( GameLoop );
+
+      // skip rendering to slow down the frame update
+      if (Game.lastTick + Game.tickLength > tick) return;
+      // statistics
+      Game.fps = 1000 / (tick - Game.lastTick);
+      Game.lastTick = tick;
+
+      cube.rotate();
+
+      renderFrame(graphicContext);
+    }
+
+    function init() {
+
+      // keyboard control
+      window.addEventListener("keydown", ({key} /* event.key*/ ) => {
+        switch (key) {
+          case 'ArrowUp':
+          Camera.moveUp();
+          break;
+          case 'ArrowDown':
+          Camera.moveDown();
+          break;
+          case 'ArrowLeft':
+          Camera.moveLeft();
+          break;
+          case 'ArrowRight':
+          Camera.moveRight();
+          break;
+          case 'f':
+          Camera.moveForward();
+          renderFrame(graphicContext);
+          break;
+        }
+      }, true);
+
+      let canvas = document.getElementById("canvas");
+      graphicContext = canvas.getContext("2d");
+      CanvasWidth = canvas.width, CanvasHeight = canvas.height;
+      HalfCanvasWidth = CanvasWidth / 2, HalfCanvasHeight = CanvasHeight / 2;
+
+      cube.rotationVec.x = Math.cos(Math.PI/180);
+      cube.rotationVec.z = Math.sin(Math.PI/180);
+
+      World.push(cube);
+
+      GameLoop(performance.now()); // Start the cycle
+    }
+
+    function renderFrame(ctx) {
+
+      // clear canvas
+      ctx.clearRect(0, 0, CanvasWidth, CanvasHeight);      
+
+      // Enter the world space and render the world objects
+      ctx.save();
+      ctx.translate(HalfCanvasWidth, HalfCanvasHeight);
+
+      World.forEach( obj => obj.render(ctx, Camera) );
+
+      ctx.restore();  // back to the overlay space
+
+      // draw the center cross lines on overlay
+      ctx.moveTo(HalfCanvasWidth, 0);
+      ctx.lineTo(HalfCanvasWidth, CanvasHeight);
+      ctx.moveTo(0, HalfCanvasHeight);
+      ctx.lineTo(CanvasWidth, HalfCanvasHeight);
+      ctx.stroke();
+
+      // fps
+      ctx.fillText('FPS: ' + Game.fps.toFixed(2), 0, 10);
+    }
+
+    </script>
+  </head>
+  <body onload="init();">
+   <center>
+     <p>2.5D 複數的應用</p>
+     <canvas id="canvas" width="800" height="600"></canvas>
+     <br>   
+     <a href="javascript:Camera.moveLeft();">Left</a>
+     <a href="javascript:Camera.moveRight();">Right</a>
+     <a href="javascript:Camera.moveUp();">Up</a>
+     <a href="javascript:Camera.moveDown();">Down</a>
+   </center>
+ </body>
+ </html>
