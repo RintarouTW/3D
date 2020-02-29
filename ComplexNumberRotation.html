@@ -1,14 +1,21 @@
 <html>
 <head>
+  <link href="https://fonts.googleapis.com/css?family=Noto+Serif+TC:300|Trade+Winds&display=swap" rel="stylesheet">
+  <style type="text/css">
+    body {
+      font-family: 'Trade Winds';
+    }
+    p {
+      font-family: 'Noto Serif TC';
+      font-size: 16px;
+    }
+  </style>
   <script type="application/javascript">
-
-    const getRndInteger = (min, max) => Math.floor(Math.random() * (max - min) ) + min;
-
     var graphicContext;
 
     // Canvas Setup
-    const CanvasWidth = 800, CanvasHeight = 600;
-    const HalfCanvasWidth = CanvasWidth / 2, HalfCanvasHeight = CanvasHeight / 2;
+    var CanvasWidth, CanvasHeight;
+    var HalfCanvasWidth, HalfCanvasHeight;
 
     // Box object in the 3D World coord
     const BoxWidth = 100, BoxHeight = 170;
@@ -17,7 +24,7 @@
 
     const cube = {
       x : 0,
-      y : 0,
+      y : 50,
       z : 250,
       mesh : [  // relative to cube's position
         [-75, -75, 75],
@@ -30,7 +37,53 @@
         [75, 75, -75],
         [75, 75, 75],
       ],
-      rotationY: 0
+      rotate: function() {
+        let rotation = this.rotationVec;
+        for (let i = 0; i < 8; i++ ) {
+
+          let vertex = this.mesh[i];
+
+          // complex number rotation, simple and eazy
+          let vz = vertex[2] * rotation.x + vertex[0] * rotation.z;
+          let vx = vertex[0] * rotation.x - vertex[2] * rotation.z;
+
+          this.mesh[i][0] = vx;
+          this.mesh[i][2] = vz;
+        }
+        // sort by z depth
+        this.mesh.sort((v1, v2) => v2[2] - v1[2]);
+      },
+
+      render: function(ctx, camera) {
+        
+        //* draw the cube mesh
+        this.mesh.forEach(vertex => {
+
+          let vx = vertex[0];
+          let vz = vertex[2];
+
+          let distance = this.z + vz - camera.position.z;
+          let scale = camera.FocalLength / distance;
+
+          ctx.save();
+          ctx.scale(scale, scale);
+
+          let x= this.x + vx - camera.position.x;
+          let y= this.y + vertex[1] - camera.position.y;
+
+          // draw the vertex circle
+          ctx.beginPath();
+          ctx.arc(x, y, 10, 0, 2 * Math.PI);
+          ctx.closePath();
+          ctx.strokeStyle = "rgb(0,0,0)";
+          ctx.fillStyle = "rgb(200, 0, 0)";
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+
+        });
+      },
+      rotationVec: {x: 0, z: 0} // x + zi
     };
 
     const Camera = {
@@ -47,15 +100,7 @@
       tickLength : 30, /* ms */
       lastTick : 0,
       fps : 0,
-      gameLoop : -1,
-      numBoxes : 15,
-      genBox : () => ({ /* (x,y,z) is the position in world */
-        x : getRndInteger(-150, 150),
-        y : 0,
-        z :  Camera.position.z + getRndInteger(30, 250),
-        width : BoxWidth + getRndInteger(0, 20),
-        height : BoxHeight + getRndInteger(0, 20) 
-      })
+      gameLoop : -1
     };
 
     function GameLoop(tick) {
@@ -68,19 +113,9 @@
       Game.fps = 1000 / (tick - Game.lastTick);
       Game.lastTick = tick;
 
-      cube.rotationY += 0.1;
+      cube.rotate();
 
-      World.forEach(box => {
-        let distance = box.z - Camera.position.z;
-
-        if (distance < 0) {
-          World.splice(World.indexOf(box), 1, Game.genBox());
-          return;
-        }
-      });
-      World.sort((a, b) => b.z - a.z);  // ordered by z depth, far one get drawn first.
-
-      renderFrame();
+      renderFrame(graphicContext);
     }
 
     function init() {
@@ -102,72 +137,53 @@
           break;
           case 'f':
           Camera.moveForward();
-          renderFrame();
+          renderFrame(graphicContext);
           break;
         }
       }, true);
 
-      graphicContext = document.getElementById("canvas").getContext("2d");
+      let canvas = document.getElementById("canvas");
+      graphicContext = canvas.getContext("2d");
+      CanvasWidth = canvas.width, CanvasHeight = canvas.height;
+      HalfCanvasWidth = CanvasWidth / 2, HalfCanvasHeight = CanvasHeight / 2;
 
-      // generate boxes
-      for (let i = 0; i < Game.numBoxes; i++)
-        World.push(Game.genBox());
+      cube.rotationVec.x = Math.cos(Math.PI/180);
+      cube.rotationVec.z = Math.sin(Math.PI/180);
+
+      World.push(cube);
 
       GameLoop(performance.now()); // Start the cycle
     }
 
-    function renderFrame() {
+    function renderFrame(ctx) {
 
       // clear canvas
-      graphicContext.clearRect(0, 0, CanvasWidth, CanvasHeight);
+      ctx.clearRect(0, 0, CanvasWidth, CanvasHeight);      
 
+      // Enter the world space and render the world objects
+      ctx.save();
+      ctx.translate(HalfCanvasWidth, HalfCanvasHeight);
 
-      //* draw cube
-      let theta = 3/4 * Math.PI + cube.rotationY;
+      World.forEach( obj => obj.render(ctx, Camera) );
 
-      for (let i = 0; i < 8; i++ ) {
-
-        // rotate first
-        let vx = 75 * Math.sqrt(2) * Math.cos(theta + i * Math.PI / 2);
-        let vz = 75 * Math.sqrt(2) * Math.sin(theta + i * Math.PI / 2);
-
-        let distance = cube.z + vz - Camera.position.z;
-        let scale = Camera.FocalLength / distance;
-        
-        graphicContext.save();
-        graphicContext.translate(HalfCanvasWidth, HalfCanvasHeight);
-        graphicContext.scale(scale, scale);
-
-        let x= cube.x + vx - Camera.position.x;
-        let y= cube.y + cube.mesh[i][1] - Camera.position.y;
-
-        graphicContext.beginPath();
-        graphicContext.arc(x, y, 10, 0, 2 * Math.PI);
-        graphicContext.closePath();
-        graphicContext.fillStyle = "rgb(200, 0, 0)";
-        graphicContext.fill();
-
-        graphicContext.restore();
-      }
+      ctx.restore();  // back to the overlay space
 
       // draw the center cross lines on overlay
-      graphicContext.moveTo(HalfCanvasWidth, 0);
-      graphicContext.lineTo(HalfCanvasWidth, CanvasHeight);
-      graphicContext.moveTo(0, HalfCanvasHeight);
-      graphicContext.lineTo(CanvasWidth, HalfCanvasHeight);
-      graphicContext.stroke();
+      ctx.moveTo(HalfCanvasWidth, 0);
+      ctx.lineTo(HalfCanvasWidth, CanvasHeight);
+      ctx.moveTo(0, HalfCanvasHeight);
+      ctx.lineTo(CanvasWidth, HalfCanvasHeight);
+      ctx.stroke();
 
       // fps
-      graphicContext.fillText('FPS: ' + Game.fps.toFixed(2), 0, 10);
-
+      ctx.fillText('FPS: ' + Game.fps.toFixed(2), 0, 10);
     }
 
     </script>
   </head>
   <body onload="init();">
    <center>
-     <b1>2.5D Simple Example</b1>
-     <br>
+     <p>2.5D 複數 i 的應用</p>
      <canvas id="canvas" width="800" height="600"></canvas>
      <br>   
      <a href="javascript:Camera.moveLeft();">Left</a>
