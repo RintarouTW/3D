@@ -13,25 +13,23 @@
     var CanvasWidth, CanvasHeight;
     var HalfCanvasWidth, HalfCanvasHeight;
 
-    // Box object in the 3D World coord
-    const BoxWidth = 100, BoxHeight = 170;
-
     const World = []; /* Simplest Scene Graph */
+    const cubeHalfWidth = 50;
 
     const cube = {
       x : 0,
       y : 50,
       z : 250,
       mesh : [  // relative to cube's position
-        [-75, -75, 75],
-        [-75, -75, -75],
-        [75, -75, -75],
-        [75, -75, 75],
+        [-cubeHalfWidth, -cubeHalfWidth, cubeHalfWidth],
+        [-cubeHalfWidth, -cubeHalfWidth, -cubeHalfWidth],
+        [cubeHalfWidth, -cubeHalfWidth, -cubeHalfWidth],
+        [cubeHalfWidth, -cubeHalfWidth, cubeHalfWidth],
 
-        [-75, 75, 75],
-        [-75, 75, -75],
-        [75, 75, -75],
-        [75, 75, 75],
+        [-cubeHalfWidth, cubeHalfWidth, cubeHalfWidth],
+        [-cubeHalfWidth, cubeHalfWidth, -cubeHalfWidth],
+        [cubeHalfWidth, cubeHalfWidth, -cubeHalfWidth],
+        [cubeHalfWidth, cubeHalfWidth, cubeHalfWidth],
       ],
       rotate: function() {
         let rotation = this.rotationVec;
@@ -49,7 +47,6 @@
         // sort by z depth
         this.mesh.sort((v1, v2) => v2[2] - v1[2]);
       },
-
       render: function(ctx, camera) {
         
         //* draw the cube mesh
@@ -180,7 +177,7 @@
   <body onload="init();">
    <center>
      <p>2.5D 複數的應用</p>
-     <canvas id="canvas" width="800" height="600"></canvas>
+     <canvas id="canvas" width="500" height="400"></canvas>
      <br>   
      <a href="javascript:Camera.moveLeft();">Left</a>
      <a href="javascript:Camera.moveRight();">Right</a>
