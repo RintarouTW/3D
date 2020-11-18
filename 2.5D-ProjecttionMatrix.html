@@ -73,16 +73,16 @@
       // keyboard control
       window.addEventListener("keydown", ({key} /* event.key*/ ) => {
         switch (key) {
-          case 'ArrowUp':
+          case 'w':
           Camera.moveUp();
           break;
-          case 'ArrowDown':
+          case 's':
           Camera.moveDown();
           break;
-          case 'ArrowLeft':
+          case 'a':
           Camera.moveLeft();
           break;
-          case 'ArrowRight':
+          case 'd':
           Camera.moveRight();
           break;
         }
@@ -138,8 +138,7 @@
   </head>
   <body onload="init();">
    <center>
-     <b1>2.5D Simple Example</b1>
-     <br>
+     <h4>2.5D Simple Example</h4>
      <canvas id="canvas" width="800" height="600"></canvas>
      <br>   
      <a href="javascript:Camera.moveLeft();">Left</a>

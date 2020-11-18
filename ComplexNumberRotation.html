@@ -83,10 +83,11 @@
       FocalLength : 500, /* Focal length of the camera in 3D World space */
       position : { x : 0, y : 60, z : 0 }, /* (x,y,z) is the position in world */
       moveForward : function() { this.position.z += 1.5; },
-      moveUp : function() { this.position.y -= 5; },
-      moveDown : function() { this.position.y += 5; },
-      moveLeft : function() { this.position.x -= 10; },
-      moveRight : function() { this.position.x += 10; }
+      moveBackward : function() { this.position.z -= 1.5; },
+      moveUp : function() { this.position.y -= 1.5; },
+      moveDown : function() { this.position.y += 1.5; },
+      moveLeft : function() { this.position.x -= 3; },
+      moveRight : function() { this.position.x += 3; }
     }; 
     
     const Game = {
@@ -116,20 +117,24 @@
       // keyboard control
       window.addEventListener("keydown", ({key} /* event.key*/ ) => {
         switch (key) {
-          case 'ArrowUp':
+          case 'w':
           Camera.moveUp();
           break;
-          case 'ArrowDown':
+          case 's':
           Camera.moveDown();
           break;
-          case 'ArrowLeft':
+          case 'a':
           Camera.moveLeft();
           break;
-          case 'ArrowRight':
+          case 'd':
           Camera.moveRight();
           break;
           case 'f':
           Camera.moveForward();
+          renderFrame(graphicContext);
+          break;
+          case 'b':
+          Camera.moveBackward();
           renderFrame(graphicContext);
           break;
         }
