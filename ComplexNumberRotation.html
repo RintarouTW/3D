@@ -7,6 +7,9 @@
       background-color: #333;
       color: #888;
     }
+    a, a:active, a:visited {
+      color: #888;
+    }
   </style>
   <script type="application/javascript">
     var graphicContext;
@@ -70,7 +73,7 @@
           ctx.beginPath();
           ctx.arc(x, y, 10, 0, 2 * Math.PI);
           ctx.closePath();
-          ctx.strokeStyle = "rgb(0,0,0)";
+          ctx.strokeStyle = "rgb(255,255,255)";
           ctx.fillStyle = "rgb(200, 0, 0)";
           ctx.fill();
           ctx.stroke();
@@ -176,6 +179,8 @@
       ctx.stroke();
 
       // fps
+      ctx.strokeStyle = "rgb(255,255,255)";
+      ctx.fillStyle = "rgb(255,255,255)";
       ctx.fillText('FPS: ' + Game.fps.toFixed(2), 0, 10);
     }
 
